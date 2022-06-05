@@ -1,0 +1,935 @@
+﻿@page
+@using System.Text.Json
+@model IndexModel
+@{
+    ViewData["Title"] = "Construction Upgrade Calculator";
+}
+
+<style>
+    td {
+        padding-left: 5px;
+        padding-right: 15px;
+    }
+
+    option.Common {
+        display: inherit;
+    }
+
+    option.Rare {
+        display: none;
+    }
+
+    option.Epic {
+        display: none;
+    }
+
+    option.Legendary {
+        display: none;
+    }
+
+    option.Ultimate {
+        display: none;
+    }
+
+    option.Used {
+        display: none;
+    }
+    .button {
+        padding: 0.6em 2em;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1.1em;
+        border: 2px;
+        cursor: pointer;
+        margin: 1em;
+    }
+</style>
+
+<h5>Current resource prices</h5>
+<table>
+    <thead>
+        <tr>
+            <td>Wax</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>@Model.ResourceValues.Wax.ToString("f6")</td>
+            <td>@Model.ResourceValues.Fusium.ToString("f8")</td>
+            <td>@Model.ResourceValues.Actium.ToString("f8")</td>
+            <td>@Model.ResourceValues.Minium.ToString("f8")</td>
+            <td>@Model.ResourceValues.Constructium.ToString("f8")</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<h5>Current Resources (Wallet + Mining)</h5>
+<table>
+    <thead>
+        <tr>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> @Model.AvailableResources.Fusium.ToString("f0")</td>
+            <td> @Model.AvailableResources.Actium.ToString("f0")</td>
+            <td> @Model.AvailableResources.Minium.ToString("f0")</td>
+            <td> @Model.AvailableResources.Constructium.ToString("f0")</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<h5>Construction Plan</h5>
+<script type="text/javascript">
+    var resources = @Html.Raw(JsonSerializer.Serialize(Model.ResourceValues));
+    var commonAssets = @Html.Raw(JsonSerializer.Serialize(Model.Common));
+    var rareAssets = @Html.Raw(JsonSerializer.Serialize(Model.Rare));
+    var epicAssets = @Html.Raw(JsonSerializer.Serialize(Model.Epic));
+    var legendaryAssets = @Html.Raw(JsonSerializer.Serialize(Model.Legendary));
+    var ultimateAssets = @Html.Raw(JsonSerializer.Serialize(Model.Ultimate));
+    var allAssets = @Html.Raw(JsonSerializer.Serialize(Model.Construction));
+</script>
+
+
+Common
+<br />
+<table id="common">
+    <thead>
+        <tr>
+            <td></td>
+            <td>Merge</td>
+            <td>With</td>
+            <td>Wax Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+            <td></td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            var j = 0;
+            for (int i = 0; i < 20; i += 2)
+            {
+                var id1 = $"common{i}";
+                var id2 = $"common{i + 1}";
+                <tr class="targets">
+                    <td><button class="FuseBtn" style="border-radius: 7px;" disabled>Fuse</button></td>
+                    <td>
+                        <select name="@id1" id=id1 class="commonpicker asset1" data-lastvalue="-1">
+                            <option value="-1">&nbsp;</option>
+                            @foreach (var c in Model.Common)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <select name="@id2" id=id2 class="commonpicker asset2" data-lastvalue="-1">
+                            <option value="-1">&nbsp;</option>
+                            @foreach (var c in Model.Common)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+
+<br />
+
+
+Rare
+<table id="rare">
+    <thead>
+        <tr>
+            <td></td>
+            <td>Merge</td>
+            <td>With</td>
+            <td>Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            j = 0;
+            for (int i = 0; i < 20; i += 2)
+            {
+                var id1 = $"rare{i}";
+                var id2 = $"rare{i + 1}";
+                <tr class="targets">
+                    <td><button class="FuseBtn" style="border-radius: 7px;" disabled>Fuse</button></td>
+                    <td>
+                        <select name="@id1" id=id1 class="rarepicker asset1" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Rare)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <select name="@id2" id=id2 class="rarepicker asset2" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Rare)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+<br />
+
+Epic
+<table id="epic">
+    <thead>
+        <tr>
+            <td></td>
+            <td>Merge</td>
+            <td>With</td>
+            <td>Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            j = 0;
+            for (int i = 0; i < 20; i += 2)
+            {
+                var id1 = $"epic{i}";
+                var id2 = $"epic{i + 1}";
+                <tr class="targets">
+                    <td><button class="FuseBtn" style="border-radius: 7px;" disabled>Fuse</button></td>
+                    <td>
+                        <select name="@id1" id=id1 class="epicpicker asset1" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Epic)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId"  title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <select name="@id2" id=id2 class="epicpicker asset2" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Epic)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+<br />
+<br />
+
+Legendary
+
+<table id="legendary">
+    <thead>
+        <tr>
+            <td></td>
+            <td>Merge</td>
+            <td>With</td>
+            <td>Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            j = 0;
+            for (int i = 0; i < 20; i += 2)
+            {
+                var id1 = $"legendary{i}";
+                var id2 = $"legendary{i + 1}";
+                <tr class="targets">
+                    <td><button class="FuseBtn" style="border-radius: 7px;" disabled>Fuse</button></td>
+                    <td>
+                        <select name="@id1" id=id1 class="legendarypicker asset1" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Legendary)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <select name="@id2" id=id2 class="legendarypicker asset2" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Legendary)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+<br />
+<br />
+
+Ultimate
+
+<table id="ultimate">
+    <thead>
+        <tr>
+            <td>Upgrade</td>
+            <td>Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            j = 0;
+            for (int i = 0; i < 20; i++)
+            {
+                var id1 = $"ultimate{i}";
+                <tr class="targets">
+                    <td>
+                        <select name="@id1" id=id1 class="ultimatepicker asset1" data-lastvalue="-1">
+                            <option value="-1"></option>
+                            @foreach (var c in Model.Ultimate)
+                            {
+                                float v = c.Price + c.PriceToLevel5(Model.ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(Model.ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+<br />
+<br />
+
+
+Summary
+<table>
+    <thead>
+        <tr>
+            <td></td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minium</td>
+            <td>Constructium</td>
+        </tr>
+    </thead>
+    <tbody class="summary">
+        <tr class="required">
+            <td>Required</td>
+            <td class="fusium"></td>
+            <td class="actium"></td>
+            <td class="minium"></td>
+            <td class="constructium"></td>
+        </tr>
+        <tr class="current" data-fusium="@Model.AvailableResources.Fusium" data-actium="@Model.AvailableResources.Actium" data-minium="@Model.AvailableResources.Minium" data-constructium="@Model.AvailableResources.Constructium">
+            <td>Current Resources</td>
+            <td class="fusium">@Model.AvailableResources.Fusium.ToString("f0")</td>
+            <td class="actium">@Model.AvailableResources.Actium.ToString("f0")</td>
+            <td class="minium">@Model.AvailableResources.Minium.ToString("f0")</td>
+            <td class="constructium">@Model.AvailableResources.Constructium.ToString("f0")</td>
+        </tr>
+        <tr class="needed">
+            <td>Needed</td>
+            <td class="fusium"></td>
+            <td class="actium"></td>
+            <td class="minium"></td>
+            <td class="constructium"></td>
+        </tr>
+        <tr class="time" data-fusium="@Model.ResourcePerHour.Fusium" data-actium=">@Model.ResourcePerHour.Actium" data-minium="@Model.ResourcePerHour.Minium" data-constructium="@Model.ResourcePerHour.Constructium">
+            <td>Time to generate (Hour)</td>
+            <td class="fusium"></td>
+            <td class="actium"></td>
+            <td class="minium"></td>
+            <td class="constructium"></td>
+        </tr>
+    <tr class="cost" data-fusium="@Model.ResourceValues.Fusium" data-actium=">@Model.ResourceValues.Actium" data-minium="@Model.ResourceValues.Minium" data-constructium="@Model.ResourceValues.Constructium">
+        <td>Cost in Wax</td>
+        <td class="fusium"></td>
+        <td class="actium"></td>
+        <td class="minium"></td>
+        <td class="constructium"></td>
+    </tr>
+    </tbody> 
+
+</table>
+
+@section scripts {
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+
+            $('#common').on("change", 'select', '#common', UpdateOptions);
+            $('#rare').on("change", 'select', '#rare', UpdateOptions);
+            $('#epic').on("change", 'select', '#epic', UpdateOptions);
+            $('#legendary').on("change", 'select', '#legendary', UpdateOptions);
+            $('#ultimate').on("change", 'select', '#ultimate', UpdateUltimateOptions);
+            $('.FuseBtn').on("click", Fuse);
+            $(document).tooltip();
+        });
+
+        function UpdateOptions(event) {
+            // determine what was previously selected
+            if (event.target.options === undefined || event.target.options.length === 0)
+                return;
+
+            var lastValue = event.target.dataset.lastvalue;
+            if (event.target.value === undefined || (event.target.value === "" && event.target.selectedIndex !== 0))
+                return;
+
+            var value = event.target.selectedIndex !== 0 ? event.target.value : -1;
+            var optionSelector = event.data + " select option";
+            if (lastValue > -1) {
+                jQuery.each($(optionSelector),
+                    function(index, obj) {
+                        if (obj.value === lastValue || obj.value === "") {
+                            obj.style = "display: block;";
+                        }
+                    });
+            }
+
+            event.target.title = event.target.options[event.target.selectedIndex].title;
+
+            var newValue = value;
+            this.dataset.lastvalue = newValue;
+            jQuery.each($(optionSelector),
+                function(index, value) {
+                    if (value.value === newValue && value.value !== "") {
+                        value.style = "display: none;";
+                    }
+                });
+
+            jQuery.each($(event.data + " tbody tr"),
+                function(index, value) {
+                    UpdatePrice(index, value);
+                });
+        };
+
+        function ClearPrice(row) {
+            row.cells[3].innerText = "";
+            row.cells[4].innerText = "";
+            row.cells[5].innerText = "";
+            row.cells[6].innerText = "";
+            row.cells[7].innerText = "";
+            row.cells[0].firstChild.attributes.disabled = true;
+            row.dataset.cost = 0;
+            row.dataset.pure = 0;
+            row.dataset.fusium = 0;
+
+            UpdateTotal(row.parentElement.parentElement);
+        };
+
+        function ClearUltimatePrice(row) {
+            row.cells[2].innerText = "";
+            row.cells[3].innerText = "";
+            row.cells[4].innerText = "";
+            row.cells[5].innerText = "";
+            row.cells[6].innerText = "";
+            row.dataset.cost = 0;
+            row.dataset.pure = 0;
+            row.dataset.fusium = 0;
+
+            UpdateUltimateTotal(row.parentElement.parentElement);
+        };
+
+        function UpdateUltimateOptions(event) {
+            // determine what was previously selected
+            if (event.target.options === undefined || event.target.options.length === 0)
+                return;
+
+            var lastValue = event.target.dataset.lastvalue;
+            if (event.target.value === undefined || (event.target.value === "" && event.target.selectedIndex !== 0))
+                return;
+
+            var value = event.target.selectedIndex !== 0 ? event.target.value : -1;
+            var optionSelector = event.data + " select option";
+            if (lastValue > -1) {
+                jQuery.each($(optionSelector),
+                    function(index, obj) {
+                        if (obj.value === lastValue || obj.value === "") {
+                            obj.style = "display: block;";
+                        }
+                    });
+            }
+
+            event.target.title = event.target.options[event.target.selectedIndex].title;
+
+            var newValue = value;
+            this.dataset.lastvalue = newValue;
+            jQuery.each($(optionSelector),
+                function(index, value) {
+                    if (value.value === newValue && value.value !== "") {
+                        value.style = "display: none;";
+                    }
+                });
+
+            jQuery.each($(event.data + " tbody tr"),
+                function(index, value) {
+                    UpdateUltimatePrice(index, value);
+                });
+        };
+
+        function ClearPrice(row) {
+            row.cells[3].innerText = "";
+            row.cells[4].innerText = "";
+            row.cells[5].innerText = "";
+            row.cells[6].innerText = "";
+            row.cells[7].innerText = "";
+            row.cells[0].firstChild.attributes.disabled = true;
+            row.dataset.cost = 0;
+            row.dataset.pure = 0;
+            row.dataset.fusium = 0;
+
+            UpdateTotal(row.parentElement.parentElement);
+        };
+
+        function UpdatePrice(index, row) {
+            var p = row.cells[3];
+            var fuseBtn = row.cells[0].firstChild;
+
+            if (row.cells[1].childNodes[1].selectedIndex === "" ||
+                row.cells[2].childNodes[1].selectedIndex === "" ||
+                row.cells[1].childNodes[1].selectedIndex === 0 ||
+                row.cells[2].childNodes[1].selectedIndex === 0) {
+                ClearPrice(row);
+                return;
+            }
+
+            var a1 = row.cells[1].childNodes[1].options[row.cells[1].childNodes[1].selectedIndex].value;
+            var a2 = row.cells[2].childNodes[1].options[row.cells[2].childNodes[1].selectedIndex].value;
+            if (a1 === undefined || a2 === undefined) {
+                ClearPrice(row);
+                return;
+            }
+
+            var ca1 = allAssets.find(x => x.AssetId === a1);
+            var ca2 = allAssets.find(x => x.AssetId === a2);
+            if (ca1 === undefined || ca2 === undefined) {
+                ClearPrice(row);
+                return;
+            }
+
+            if (fuseBtn.disabled === true && !row.cells[1].firstElementChild.disabled)
+                fuseBtn.disabled = false;
+
+            var c1 = allAssets.find(x => x.AssetId === a1);
+            var c2 = allAssets.find(x => x.AssetId === a2);
+            var p1 = c1.Price + (c1.ResourcesToLevel * resources.Total);
+            var p2 = c2.Price + (c2.ResourcesToLevel * resources.Total);
+            var cost = p1 + p2;
+            var pure = c1.ResourcesToLevel + c2.ResourcesToLevel;
+            var fusium = c1.ResourcesToLevel + c2.ResourcesToLevel + c1.FusiumToFuse;
+            row.dataset.cost = cost;
+            row.dataset.pure = pure;
+            row.dataset.fusium = fusium;
+            p.innerText = (Math.floor(cost * 100) / 100.0).toLocaleString('en-US');
+            row.cells[4].innerText = fusium.toLocaleString('en-US');
+            row.cells[5].innerText = pure.toLocaleString('en-US');
+            row.cells[6].innerText = pure.toLocaleString('en-US');
+            row.cells[7].innerText = pure.toLocaleString('en-US');
+            UpdateTotal(row.parentElement.parentElement);
+        };
+
+        function UpdateUltimatePrice(index, row) {
+            var p = row.cells[1];
+
+            if (row.cells[0].childNodes[1].selectedIndex === "" ||
+                row.cells[0].childNodes[1].selectedIndex === 0) {
+                ClearUltimatePrice(row);
+                return;
+            }
+
+            var a1 = row.cells[0].childNodes[1].options[row.cells[0].childNodes[1].selectedIndex].value;
+            if (a1 === undefined) {
+                ClearUltimatePrice(row);
+                return;
+            }
+
+            var ca1 = allAssets.find(x => x.AssetId === a1);
+            if (ca1 === undefined) {
+                ClearUltimatePrice(row);
+                return;
+            }
+
+            var c1 = allAssets.find(x => x.AssetId === a1);
+            var p1 = c1.Price + (c1.ResourcesToLevel * resources.Total);
+            var cost = p1;
+            var pure = c1.ResourcesToLevel;
+            var fusium = c1.ResourcesToLevel;
+            row.dataset.cost = cost;
+            row.dataset.pure = pure;
+            row.dataset.fusium = fusium;
+            p.innerText = "";
+            row.cells[2].innerText = fusium.toLocaleString('en-US');
+            row.cells[3].innerText = pure.toLocaleString('en-US');
+            row.cells[4].innerText = pure.toLocaleString('en-US');
+            row.cells[5].innerText = pure.toLocaleString('en-US');
+            UpdateUltimateTotal(row.parentElement.parentElement);
+        };
+
+        function Fuse(event) {
+            var row = this.parentElement.parentElement;
+            var o1 = row.cells[1].childNodes[1].options[row.cells[1].childNodes[1].selectedIndex];
+            var o2 = row.cells[2].childNodes[1].options[row.cells[2].childNodes[1].selectedIndex];
+            var a1 = o1.value;
+            var a2 = o2.value;
+            if (a1 === undefined || a2 === undefined) {
+                ClearPrice(row);
+                return;
+            }
+
+            var ca1 = allAssets.find(x => x.AssetId === a1);
+            var ca2 = allAssets.find(x => x.AssetId === a2);
+            if (ca1 === undefined || ca2 === undefined) {
+                ClearPrice(row);
+                return;
+            }
+
+            var combined = resources.Total;
+            var fused = structuredClone(ca1);
+            var optionsSelector = "";
+            fused.level = "1";
+            fused.Price = parseFloat(row.dataset.cost);
+
+            switch (ca1.rarity) {
+            case "Rare":
+                fused.rarity = "Epic";
+                fused.AssetId += "_r";
+                fused.ResourcesToLevel = 81000;
+                fused.FusiumToFuse = 108000;
+                fused.variant = "E1";
+                fused.Price = 0.0;
+                optionSelector = "#epic select";
+                break;
+            case "Epic":
+                fused.rarity = "Legendary";
+                fused.AssetId += "_e";
+                fused.ResourcesToLevel = 210000;
+                fused.FusiumToFuse = 108000;
+                fused.variant = "L1";
+                optionSelector = "#legendary select";
+                break;
+            case "Legendary":
+                fused.rarity = "Ultimate";
+                fused.AssetId += "_l";
+                fused.ResourcesToLevel = 280000;
+                fused.FusiumToFuse = 135000;
+                fused.variant = "U1";
+                optionSelector = "#ultimate select";
+                break;
+            default:
+                fused.rarity = "Rare";
+                fused.AssetId += "_c";
+                fused.ResourcesToLevel = 140000;
+                fused.FusiumToFuse = 81000;
+                fused.variant = "R1";
+                optionSelector = "#rare select";
+                break;
+            };
+
+            if (allAssets.find(x => x.AssetId === fused.AssetId) !== undefined)
+                return;
+
+            allAssets.push(fused);
+            jQuery.each($(optionSelector),
+                function(index, value) {
+                    var newOption = new Option(fused.variant + " " + fused.name, fused.AssetId);
+                    newOption.title = "Purchase cost: 0, resource cost: " + combined * fused.ResourcesToLevel;
+                    value.options.add(newOption, 1);
+                });
+
+            // remove the items that were used
+            this.disabled = true;
+            o1.parentElement.style = "display: none;";
+            o2.parentElement.style = "display: none;";
+            if (ca1.Price > 0) {
+                b1 = document.createElement("a");
+                b1.href = "https://wax.atomichub.io/explorer/asset/" + a1;
+                b1.target = "AtomicHub";
+                b1.innerText = "Buy " + o1.innerText;
+                row.cells[1].appendChild(b1);
+            }
+            if (ca2.Price > 0) {
+                b2 = document.createElement("a");
+                b2.href = "https://wax.atomichub.io/explorer/asset/" + a2;
+                b2.target = "AtomicHub";
+                b2.innerText = "Buy " + o2.innerText;
+                row.cells[2].appendChild(b2);
+            }
+        };
+
+        function UpdateTotal(table) {
+            var cost = 0.0;
+            var fusium = 0.0;
+            var pure = 0.0;
+            var lastRow = table.rows.length - 1;
+
+            jQuery.each($('tr.targets', table),
+                function(index, value) {
+                    cost += value.dataset.cost == undefined ? 0.0 : parseFloat(value.dataset.cost);
+                    fusium += value.dataset.fusium == undefined ? 0 : parseFloat(value.dataset.fusium);
+                    pure += value.dataset.pure == undefined ? 0 : parseFloat(value.dataset.pure);
+                });
+
+            var totalRow = table.rows[lastRow];
+            totalRow.cells[3].innerText = cost === 0.0 ? "" : (Math.floor(cost * 100) / 100.0).toLocaleString('en-US');
+            totalRow.cells[4].innerText = fusium === 0.0 ? "" : fusium.toLocaleString('en-US');
+            totalRow.cells[5].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.cells[6].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.cells[7].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.dataset.cost = cost;
+            totalRow.dataset.pure = pure;
+            totalRow.dataset.fusium = fusium;
+
+            UpdateGrandTotal();
+        };
+
+        function UpdateGrandTotal() {
+            var cost = 0.0;
+            var fusium = 0.0;
+            var pure = 0.0;
+
+            var totals = $('tr.totals');
+            for (var i = 0; i < totals.length; i++)
+            {
+                if (totals[i].dataset == undefined || totals[i].dataset.fusium == undefined || totals[i].dataset.cost == undefined || totals[i].dataset.pure == undefined)
+                    continue;
+
+                cost += totals[i].dataset.cost == undefined ? 0.0 : parseFloat(totals[i].dataset.cost);
+                fusium += totals[i].dataset.fusium == undefined ? 0 : parseFloat(totals[i].dataset.fusium);
+                pure += totals[i].dataset.pure == undefined ? 0 : parseFloat(totals[i].dataset.pure);
+            }
+
+            $('tbody.summary tr.required td.fusium')[0].innerText = Math.trunc(fusium).toLocaleString('en-US');
+            $('tbody.summary tr.required td.actium')[0].innerText = Math.trunc(pure).toLocaleString('en-US');
+            $('tbody.summary tr.required td.minium')[0].innerText = Math.trunc(pure).toLocaleString('en-US');
+            $('tbody.summary tr.required td.constructium')[0].innerText = Math.trunc(pure).toLocaleString('en-US');
+
+            var current = $('tbody.summary tr.current')[0];
+            var fNeeded = fusium - parseFloat(current.dataset.fusium);
+            var aNeeded = pure - parseFloat(current.dataset.actium);
+            var mNeeded = pure - parseFloat(current.dataset.minium);
+            var cNeeded = pure - parseFloat(current.dataset.constructium);
+
+            var time = $('tbody.summary tr.time')[0];
+            var fPerHour = parseFloat(time.dataset.fusium);
+            if (isNaN(fPerHour))
+                fPerHour = 0;
+            var aPerHour = parseFloat(time.dataset.actium);
+            if (isNaN(aPerHour))
+                aPerHour = 0;
+            var mPerHour = parseFloat(time.dataset.minium);
+            if (isNaN(mPerHour))
+                mPerHour = 0;
+            var cPerHour = parseFloat(time.dataset.constructium);
+            if (isNaN(cPerHour))
+                cPerHour = 0;
+            var cells = time.cells;
+            cells[1].innerText = fNeeded < 0.0 ? "" : (Math.floor((fNeeded / fPerHour) * 100) / 100.0).toLocaleString('en-US');
+            cells[2].innerText = aNeeded < 0.0 ? "" : (Math.floor((aNeeded / aPerHour) * 100) / 100.0).toLocaleString('en-US');
+            cells[3].innerText = mNeeded < 0.0 ? "" : (Math.floor((mNeeded / mPerHour) * 100) / 100.0).toLocaleString('en-US');
+            cells[4].innerText = cNeeded < 0.0 ? "" : (Math.floor((cNeeded / cPerHour) * 100) / 100.0).toLocaleString('en-US');
+
+            var fNeededStr = fNeeded < 0.0 ? "" : Math.floor(fNeeded).toLocaleString('en-US');
+            var aNeededStr = aNeeded < 0.0 ? "" : Math.floor(aNeeded).toLocaleString('en-US');
+            var mNeededStr = mNeeded < 0.0 ? "" : Math.floor(mNeeded).toLocaleString('en-US');
+            var cNeededStr = cNeeded < 0.0 ? "" : Math.floor(cNeeded).toLocaleString('en-US');
+
+            var needed = $('tbody.summary tr.needed')[0].cells;
+            needed[1].innerText = fNeededStr;
+            needed[2].innerText = aNeededStr;
+            needed[3].innerText = mNeededStr;
+            needed[4].innerText = cNeededStr;
+            $('tbody.summary tr.time td.fusium')[0].innerText = fNeeded < 0.0 ? "" : (Math.floor((fNeeded / fPerHour) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.time td.actium')[0].innerText = aNeeded < 0.0 ? "" : (Math.floor((aNeeded / aPerHour) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.time td.minium')[0].innerText = mNeeded < 0.0 ? "" : (Math.floor((mNeeded / mPerHour) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.time td.constructium')[0].innerText = cNeeded < 0.0 ? "" : (Math.floor((cNeeded / cPerHour) * 100) / 100.0).toLocaleString('en-US');
+
+            var costRow = $('tbody.summary tr.cost')[0];
+            var pricef = parseFloat(costRow.dataset.fusium);
+            var pricea = parseFloat(costRow.dataset.actium);
+            var pricem = parseFloat(costRow.dataset.minium);
+            var pricec = parseFloat(costRow.dataset.constructium);
+
+            $('tbody.summary tr.cost td.fusium')[0].innerText = fNeeded < 0.0 ? "" : (Math.floor((fNeeded * pricef) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.cost td.actium')[0].innerText = aNeeded < 0.0 ? "" : (Math.floor((aNeeded * pricea) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.cost td.minium')[0].innerText = mNeeded < 0.0 ? "" : (Math.floor((mNeeded * pricem) * 100) / 100.0).toLocaleString('en-US');
+            $('tbody.summary tr.cost td.constructium')[0].innerText = cNeeded < 0.0 ? "" : (Math.floor((cNeeded * pricec) * 100) / 100.0).toLocaleString('en-US');
+        };
+
+        function UpdateUltimateTotal(table) {
+            var cost = 0.0;
+            var fusium = 0.0;
+            var pure = 0.0;
+            var lastRow = table.rows.length - 1;
+
+            jQuery.each($('tr.targets', table),
+                function(index, value) {
+                    cost += value.dataset.cost == undefined ? 0.0 : parseFloat(value.dataset.cost);
+                    fusium += value.dataset.fusium == undefined ? 0 : parseFloat(value.dataset.fusium);
+                    pure += value.dataset.pure == undefined ? 0 : parseFloat(value.dataset.pure);
+                });
+
+            var totalRow = table.rows[lastRow];
+            totalRow.cells[1].innerText = "";
+            totalRow.cells[2].innerText = fusium === 0.0 ? "" : fusium.toLocaleString('en-US');
+            totalRow.cells[3].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.cells[4].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.cells[5].innerText = pure === 0.0 ? "" : pure.toLocaleString('en-US');
+            totalRow.dataset.cost = cost;
+            totalRow.dataset.pure = pure;
+            totalRow.dataset.fusium = fusium;
+
+            UpdateGrandTotal();
+        };
+
+        function GoToAsset(event) {
+            var o = event.target.children[0].options[event.target.children[0].selectedIndex].value;
+            var url = "https://wax.atomichub.io/explorer/asset/" + o;
+            window.open(url, '_blank').focus();
+        };
+
+    </script>
+}
