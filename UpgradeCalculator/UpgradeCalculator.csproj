@@ -12,4 +12,8 @@
     <ProjectReference Include="..\GenericClient\GenericClient.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>
