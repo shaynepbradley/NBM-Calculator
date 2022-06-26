@@ -4,15 +4,18 @@ using Alcor.Models;
 using AtomicAssets.Classes;
 using AtomicAssets.Interfaces;
 using AtomicAssets.Models;
+using UpgradeCalculator.Interfaces;
 
 namespace UpgradeCalculator.Classes;
 
 public static class Infrastructure<T> where T : class, IAsset
 {
-    public static async Task<(List<Schema> schema, List<Template> templates, List<Asset<T>> assets)> FetchData(string id, IAtomicClient<BattleMiners, T> client, ILogger log)
+    public static async Task<List<Asset<T>>> FetchData(string id, IAtomicClient<BattleMiners, T> client, ILogger log)
     {
         Stopwatch watch = new Stopwatch();
 
+        /*
+        log.LogInformation($"Retrieving Information for user {id}");
         log.LogInformation("Retrieving Schemas");
         watch.Start();
         var schemas = await client.GetSchemas().ConfigureAwait(false);
@@ -26,7 +29,7 @@ public static class Infrastructure<T> where T : class, IAsset
         watch.Stop();
         log.LogInformation($"Retrieving Templates required {watch.ElapsedMilliseconds} ms, Count {templates.Count}");
         watch.Reset();
-
+        */
         log.LogInformation("Retrieving user assets");
         watch.Start();
         var assets = await client.GetAssets(id).ConfigureAwait(false);
@@ -36,29 +39,7 @@ public static class Infrastructure<T> where T : class, IAsset
 
         assets.ForEach(a => a.data.AssetId = a.asset_id);
 
-        return(schemas, templates, assets);
-    }
-
-    public static async Task<Resources> GetCurrentPrices(IAlcorClient alcorClient, IConfiguration config, ILogger log)
-    {
-        var results = new Resources();
-        var defiData = await alcorClient.GetDefiData<DefiResponse>(51).ConfigureAwait(false);
-        if (defiData.code == 0 && defiData.message == "success")
-        {
-            results.Wax = float.Parse(defiData.waxUsdtPrice);
-            results.Minium = defiData.data[0].price;
-        }
-        defiData = await alcorClient.GetDefiData<DefiResponse>(29).ConfigureAwait(false);
-        if (defiData.code == 0)
-            results.Constructium = defiData.data[0].price;
-        defiData = await alcorClient.GetDefiData<DefiResponse>(53).ConfigureAwait(false);
-        if (defiData.code == 0)
-            results.Actium = defiData.data[0].price;
-        defiData = await alcorClient.GetDefiData<DefiResponse>(52).ConfigureAwait(false);
-        if (defiData.code == 0)
-            results.Fusium = defiData.data[0].price;
-
-        return results;
+        return assets;
     }
 
     public static List<T> AddNft(List<Sale<T>> resp, float waxPrice, ILogger log)
@@ -76,7 +57,7 @@ public static class Infrastructure<T> where T : class, IAsset
             if (asset.Price < 1)
                 Debugger.Break();
             asset.AssetId = item.assets[0].asset_id;
-            log.LogInformation($"{item.assets[0].asset_id} - {asset.name} - {asset.variant} (Original Price {item.listing_price} {item.listing_symbol}, adjusted price of {asset.Price})");
+            // log.LogInformation($"{item.assets[0].asset_id} - {asset.name} - {asset.variant} (Original Price {item.listing_price} {item.listing_symbol}, adjusted price of {asset.Price})");
             results.Add(asset);
         }
 

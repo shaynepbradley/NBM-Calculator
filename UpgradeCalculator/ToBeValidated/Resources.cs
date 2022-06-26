@@ -8,4 +8,5 @@ public class Resources
     public float Minium { get; set; }
     public float Constructium { get; set; }
     public float Total => Fusium + Actium + Minium + Constructium;
+    public DateTime? UpdatedAt { get; set; } = null;
 }

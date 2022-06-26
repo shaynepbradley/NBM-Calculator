@@ -14,5 +14,7 @@ namespace Alcor
         public Task<List<Transaction>?> GetTransactions(string market, CancellationToken cancelToken);
 
         public Task<T> GetDefiData<T>(int id) where T : new();
+
+        public Task<string> GetDefiData(int id, CancellationToken cancelToken);
     }
 }

@@ -1,27 +1,29 @@
-﻿using Alcor;
+﻿using System.Diagnostics;
+using Alcor;
 using AtomicAssets.Classes;
 using AtomicAssets.Interfaces;
 using AtomicAssets.Models;
 using GenericClient;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using UpgradeCalculator.Classes;
-using Construction = UpgradeCalculator.Classes.Construction;
+using UpgradeCalculator.Interfaces;
 
 namespace UpgradeCalculator.Pages;
 
 public class IndexModel : PageModel
 {
-    private readonly IAlcorClient _alcorClient;
+    private readonly IWaxId _id;
+    private readonly IResourcePrices _resourcePrices;
     private readonly IAtomicClient<BattleMiners, Construction> _atomicClient;
-    private readonly IGenericClient _genericClient;
+    private readonly IMiningInfo _miningInfo;
     private readonly IConfiguration _config;
     private readonly ILogger<IndexModel> _logger;
     public Resources ResourceValues { get; set; } = new();
     public Resources AvailableResources { get; set; } = new();
     public Resources ResourcePerHour { get; set; } = new();
-    public List<Schema> Schemas { get; set; } = new();
-    public List<Template> Templates { get; set; } = new();
+    public Resources RepairPerHour { get; set; } = new();
     public List<WalletItem>? Wallet { get; set; } = new();
     public List<MiningOperation>? Mining { get; set; } = new();
     public List<Asset<Construction>> Assets { get; set; } = new();
@@ -31,64 +33,48 @@ public class IndexModel : PageModel
     public List<Construction> Epic { get; set; } = null!;
     public List<Construction> Legendary { get; set; } = null!;
     public List<Construction> Ultimate { get; set; } = null!;
+    public string UserId { get; set; } = null!;
 
-    public IndexModel(IAlcorClient alcorClient, IAtomicClient<BattleMiners, Construction> atomicClient,
-        IGenericClient genericClient, IConfiguration config, ILogger<IndexModel> logger)
+    public IndexModel(IWaxId id, IResourcePrices resourcePrices, IAtomicClient<BattleMiners, Construction> atomicClient,
+        IMiningInfo miningInfo, IConfiguration config, ILogger<IndexModel> logger)
     {
-        _alcorClient = alcorClient;
+        _id = id;
+        _resourcePrices = resourcePrices;
         _atomicClient = atomicClient;
-        _genericClient = genericClient;
+        _miningInfo = miningInfo;
         _config = config;
         _logger = logger;
     }
 
     public async Task<IActionResult> OnGet([FromQuery] string userId)
     {
-        ViewData["userId"] = userId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            userId = "cnrzi.wam";
+            return RedirectToPage("SetWaxId", new { ru = "/index" });
         }
+        ViewData["userId"] = userId;
+        _id.SetId(userId);
 
-        (Schemas, Templates, Assets) = await Infrastructure<Construction>.FetchData(userId, _atomicClient, _logger);
-        ResourceValues = await Infrastructure<Lands>.GetCurrentPrices(_alcorClient, _config, _logger)
-            .ConfigureAwait(false);
+        // Assets = await Infrastructure<Construction>.FetchData(UserId, _atomicClient, _logger).ConfigureAwait(false);
 
-        var wallet = await _genericClient
-            .GetData<List<WalletItem>>(new Uri($"https://sockdev.nftbattleminers.com:8890/user/{userId}/balance"),
-                CancellationToken.None).ConfigureAwait(false);
-        AvailableResources.Fusium = wallet.Find(w => w.resource_id == 1)!.amount;
-        AvailableResources.Actium = wallet.Find(w => w.resource_id == 2)!.amount;
-        AvailableResources.Minium = wallet.Find(w => w.resource_id == 3)!.amount;
-        AvailableResources.Constructium = wallet.Find(w => w.resource_id == 4)!.amount;
-        var mining = await _genericClient
-            .GetData<List<MiningOperation>>(
-                new Uri($"https://sockdev.nftbattleminers.com:8890/user/{userId}/mining_operations"),
-                CancellationToken.None).ConfigureAwait(false);
-        foreach (var item in mining)
-        {
-            switch (item.resource_type)
-            {
-                case WalletItem.ResIds.Fusium:
-                    AvailableResources.Fusium += item.tokens_mined;
-                    ResourcePerHour.Fusium += item.amount_ph;
-                    break;
-                case WalletItem.ResIds.Actium:
-                    AvailableResources.Actium += item.tokens_mined;
-                    ResourcePerHour.Actium += item.amount_ph;
-                    break;
-                case WalletItem.ResIds.Minium:
-                    AvailableResources.Minium += item.tokens_mined;
-                    ResourcePerHour.Minium += item.amount_ph;
-                    break;
-                case WalletItem.ResIds.Constructium:
-                    AvailableResources.Constructium += item.tokens_mined;
-                    ResourcePerHour.Constructium += item.amount_ph;
-                    break;
-            }
-        }
+        Stopwatch watch = new Stopwatch();
+        /*
+        _logger.LogInformation("Calling GetCurrentPrices");
+        watch.Start();
+        ResourceValues = await _resourcePrices.Current().ConfigureAwait(false);
+        watch.Stop();
+        _logger.LogInformation($"Calling GetCurrentPrices required {watch.ElapsedMilliseconds} ms");
+        watch.Reset();
 
+        AvailableResources = await _miningInfo.CurrentlyAvailable().ConfigureAwait(false);
+
+        _logger.LogInformation("Retrieving asset sale information");
+        watch.Start();
         var allSales = await GetConstruction().ConfigureAwait(false);
+        watch.Stop();
+        _logger.LogInformation($"Retrieving asset sale information required {watch.ElapsedMilliseconds} ms");
+        watch.Reset();
+
         if (allSales.Count == 100)
         {
             Common = await GetConstruction("Common").ConfigureAwait(false);
@@ -148,12 +134,38 @@ public class IndexModel : PageModel
             Ultimate.AddRange(Assets.Where(a => a.data.rarity == "Ultimate").Select(a => a.data));
             Construction.AddRange(Ultimate);
             Ultimate = Ultimate.OrderBy(c => c.PriceToLevel5(ResourceValues.Total)).ToList();
-        }
+        }*/
 
         return new PageResult();
     }
 
+    public async Task<IActionResult> OnPostGetResourceValues()
+    {
+        return new JsonResult(await _resourcePrices.Current().ConfigureAwait(false));
+    }
 
+    public async Task<IActionResult> OnPostGetAvailableResource()
+    {
+        return new JsonResult(await _miningInfo.CurrentlyAvailable().ConfigureAwait(false));
+    }
+
+    public IActionResult OnPostSetUserId([FromForm] string userid)
+    {
+        if (!string.IsNullOrWhiteSpace(userid))
+        {
+            _id.SetId(userid);
+            _id.Version += 5;
+            UserId = userid;
+        }
+
+        return new JsonResult(new { status = "OK" });
+    }
+
+    public async Task<IActionResult> OnPostGetResourcesPerHour()
+    {
+        return new JsonResult(await _miningInfo.TotalPerHourProduction().ConfigureAwait(false));
+    }
+    /*
     private async Task<List<Construction>> GetConstruction(string rarity = "")
     {
         try
@@ -167,4 +179,5 @@ public class IndexModel : PageModel
             throw;
         }
     }
+    */
 }

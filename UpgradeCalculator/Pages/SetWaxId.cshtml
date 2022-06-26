@@ -1,0 +1,25 @@
+﻿@page
+@model UpgradeCalculator.Pages.SetWaxIdModel
+@{
+    ViewData["Title"] = "Please Enter Wax Id";
+}
+<div>
+    <label for="waxid">Please enter the Wax ID</label>
+    <input id="waxid" type="text" value="@Model.WaxId"/>
+    <input  id="ru" type="hidden" value="@Model.ReturnUrl" />
+    <input  id="userId" type="hidden" value="@Model.ReturnUrl?@Model.WaxId" /><br/>
+    <button id="Ok">Ok</button>&nbsp;&nbsp;<button id="Cancel">Cancel</button>
+</div>
+@section scripts {
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#Ok').on("click", UpdateUserId);
+            $('#Cancel').on("click", function() { document.location.replace($('#userId')[0].value); });
+        });
+
+        function UpdateUserId() {
+            document.location.replace( $('#ru')[0].value + '?userId=' + $('#waxid')[0].value);
+        }
+
+    </script>
+}

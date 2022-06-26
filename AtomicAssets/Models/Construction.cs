@@ -1,9 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using AtomicAssets.Models;
 
-namespace UpgradeCalculator.Classes;
+namespace AtomicAssets.Models;
 
-public class Construction : IAsset
+public class Construction
 {
     public string name { get; set; }
     public string img { get; set; }

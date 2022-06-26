@@ -3,31 +3,36 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Alcor.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Alcor;
 
 public class AlcorClient : IAlcorClient
 {
+    private readonly IConfiguration _config;
     private readonly ILogger<AlcorClient> _logger;
 
-    public AlcorClient(ILogger<AlcorClient> logger)
+    private readonly Uri _defiUrl;
+
+    public AlcorClient(IConfiguration config, ILogger<AlcorClient> logger)
     {
+        _config = config;
         _logger = logger;
+        _defiUrl = new Uri(_config["DefiEndpoint"]);
     }
 
     private HttpClient? _client;
-    private const string Server = "https://wax.alcor.exchange/api/markets/";
-    private const string DefiServer = "https://wax.defibox.io/defibox/api/swap/getMarket";
     private List<MarketInfo>? _marketsInfo;
     private DateTime _lastUpDateTime = DateTime.Now;
-    private object _lock = new();
-    private bool _busy = false;
+    private readonly object _lock = new();
+    private bool _busy;
 
-    public async Task<T?> GetData<T>(CancellationToken cancelToken)
+    private async Task<T?> GetData<T>(CancellationToken cancelToken)
     {
-        return await ResponseHttpAsync<T>(new Uri(Server), cancelToken).ConfigureAwait(false);
+        return await ResponseHttpAsync<T>(new Uri(_config["AlcorEndpoint"]), cancelToken).ConfigureAwait(false);
     }
 
     public async Task<T?> GetData<T>(string market, bool deals, CancellationToken cancelToken)
@@ -35,31 +40,41 @@ public class AlcorClient : IAlcorClient
         await LoadData().ConfigureAwait(false);
 
         var marketId = string.IsNullOrWhiteSpace(market) ? default : await GetMarketId(market).ConfigureAwait(false);
-        var uri = new Uri($"{Server}{(marketId.HasValue ? marketId.Value.ToString() : string.Empty)}{(deals ? "/deals" : string.Empty)}");
+        var uri = new Uri($"{_config["AlcorEndpoint"]}{(marketId.HasValue ? marketId.Value.ToString() : string.Empty)}{(deals ? "/deals" : string.Empty)}");
 
         return await ResponseHttpAsync<T>(uri, cancelToken).ConfigureAwait(false);
     }
-    public async Task<T?> GetData<T>(int? marketId, bool deals, CancellationToken cancelToken)
+
+    private async Task<T?> GetData<T>(int? marketId, bool deals, CancellationToken cancelToken)
     {
         await LoadData().ConfigureAwait(false);
 
-        var uri = new Uri($"{Server}{(marketId.HasValue ? marketId.Value.ToString() : string.Empty)}{(deals ? "/deals" : string.Empty)}");
+        var uri = new Uri($"{_config["AlcorEndpoint"]}{(marketId.HasValue ? marketId.Value.ToString() : string.Empty)}{(deals ? "/deals" : string.Empty)}");
 
         return await ResponseHttpAsync<T>(uri, cancelToken).ConfigureAwait(false);
     }
 
-    public class DefiRequest
+    [Serializable]
+    private class DefiRequest
     {
-        public int pairId { get; set; }
+        [JsonPropertyName("pairId")] 
+        public int pairId;
     }
 
-    public async Task<T> GetDefiData<T>(int id) where T : new()
+    public async Task<T?> GetDefiData<T>(int id) where T : new()
     {
-        var uri = new Uri(DefiServer);
         var content = JsonContent.Create(new DefiRequest { pairId = id }, MediaTypeHeaderValue.Parse("application/json"));
 
-        var result = await ResponseHttpAsync<T?>(uri, content, CancellationToken.None).ConfigureAwait(false);
+        var result = await ResponseHttpAsync<T?>(_defiUrl, content, CancellationToken.None).ConfigureAwait(false);
         return result != null ? result : new T();
+    }
+
+    public async Task<string> GetDefiData(int id, CancellationToken cancelToken)
+    {
+        var content = JsonContent.Create(new DefiRequest { pairId = id }, MediaTypeHeaderValue.Parse("application/json"));
+
+        var result = await ResponseHttpAsync<string>(_defiUrl, content, CancellationToken.None).ConfigureAwait(false);
+        return result != null ? result : string.Empty;
     }
 
     private async Task<T?> ResponseHttpAsync<T>(Uri server, HttpContent content, CancellationToken cancelToken)
@@ -72,7 +87,7 @@ public class AlcorClient : IAlcorClient
                 Timeout = TimeSpan.FromMinutes(5)
             };
 
-            _logger.LogDebug($"Content: {await content.ReadAsStringAsync().ConfigureAwait(false)}, Type: content.");
+            _logger.LogDebug($"Content: {await content.ReadAsStringAsync(cancelToken).ConfigureAwait(false)}, Type: content.");
             using var request = new HttpRequestMessage(HttpMethod.Post, server.LocalPath) { Content = content };
             request.Headers.Add("Accept", "application/json");
             var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancelToken).ConfigureAwait(false);
@@ -273,6 +288,7 @@ public class AlcorClient : IAlcorClient
                 if (_marketsInfo == null || _marketsInfo?.Count == 0)
                 {
                     _marketsInfo = await GetData<List<MarketInfo>>(CancellationToken.None).ConfigureAwait(false);
+                    _lastUpDateTime = DateTime.Now;
                 }
             }
             finally

@@ -1,4 +1,3 @@
-using Alcor;
 using AtomicAssets.Classes;
 using AtomicAssets.Interfaces;
 using AtomicAssets.Models;
@@ -6,23 +5,24 @@ using GenericClient;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using UpgradeCalculator.Classes;
+using UpgradeCalculator.Interfaces;
+using UpgradeCalculator.ToBeValidated;
+using Schema = UpgradeCalculator.Classes.Schema;
+using Template = UpgradeCalculator.Classes.Template;
 
 namespace UpgradeCalculator.Pages;
 
 public class LandsModel : PageModel
 {
-    private readonly IAlcorClient _alcorClient;
-    private readonly IAtomicClient<BattleMiners, Lands> _atomicClient;
+    private readonly IResourcePrices _resourcePrices;
+    private readonly IAtomicClient<BattleMiners, object> _atomicClient;
     private readonly IGenericClient _genericClient;
     private readonly IConfiguration _config;
     private readonly ILogger<IndexModel> _logger;
+    /*
     public Resources ResourceValues { get; set; } = new();
     public Resources AvailableResources { get; set; } = new();
     public Resources ResourcePerHour { get; set; } = new();
-    public List<Schema> Schemas { get; set; } = new();
-    public List<Template> Templates { get; set; } = new();
-    public List<WalletItem>? Wallet { get; set; } = new();
-    public List<MiningOperation>? Mining { get; set; } = new();
     public List<Asset<Lands>> Assets { get; set; } = new();
     public List<Lands> Lands { get; set; } = new();
     public List<Lands> Common { get; set; } = null!;
@@ -31,9 +31,9 @@ public class LandsModel : PageModel
     public List<Lands> Legendary { get; set; } = null!;
     public List<Lands> Ultimate { get; set; } = null!;
 
-    public LandsModel(IAlcorClient alcorClient, IAtomicClient<BattleMiners, Lands> atomicClient, IGenericClient genericClient, IConfiguration config, ILogger<IndexModel> logger)
+    public LandsModel(IResourcePrices resourcePrices, IAtomicClient<BattleMiners, Lands> atomicClient, IGenericClient genericClient, IConfiguration config, ILogger<IndexModel> logger)
     {
-        _alcorClient = alcorClient;
+        _resourcePrices = resourcePrices;
         _atomicClient = atomicClient;
         _genericClient = genericClient;
         _config = config;
@@ -47,10 +47,9 @@ public class LandsModel : PageModel
         {
             userId = "cnrzi.wam";
         }
-
-        (Schemas, Templates, Assets) = await Infrastructure<Lands>.FetchData(userId, _atomicClient, _logger);
-        ResourceValues = await Infrastructure<Lands>.GetCurrentPrices(_alcorClient, _config, _logger)
-            .ConfigureAwait(false);
+        /*
+        Assets = await Infrastructure<Lands>.FetchData(userId, _atomicClient, _logger);
+        ResourceValues = await _resourcePrices.Current().ConfigureAwait(false);
 
         var wallet = await _genericClient.GetData<List<WalletItem>>(new Uri($"https://sockdev.nftbattleminers.com:8890/user/{userId}/balance"), CancellationToken.None).ConfigureAwait(false);
         AvailableResources.Fusium = wallet.Find(w => w.resource_id == 1)!.amount;
@@ -138,7 +137,8 @@ public class LandsModel : PageModel
             Lands.AddRange(Ultimate);
             Ultimate = Ultimate.OrderBy(c => c.PriceToLevel5(ResourceValues.Total)).ToList();
         }
-        return new PageResult();
+        
+        return await Task.FromResult(new PageResult()).ConfigureAwait(false);
     }
 
     private async Task<List<Lands>> GetLands(string rarity = "")
@@ -154,5 +154,5 @@ public class LandsModel : PageModel
             throw;
         }
     }
-
+    */
 }

@@ -3,19 +3,28 @@ using AtomicAssets.Interfaces;
 using AtomicAssets.Models;
 using GenericClient;
 using UpgradeCalculator.Classes;
+using UpgradeCalculator.Interfaces;
+using UpgradeCalculator.ToBeValidated;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
 builder.Host.ConfigureServices(services =>
 {
     services.AddSingleton<IAtomicClient<BattleMiners, Construction>, AtomicClient<BattleMiners, Construction>>().
-        AddSingleton<IAtomicClient<BattleMiners, Lands>, AtomicClient<BattleMiners, Lands>>().
+        //AddSingleton<IAtomicClient<BattleMiners, Lands>, AtomicClient<BattleMiners, Lands>>().
         AddSingleton<IGenericClient, GenericClient.GenericClient>().
-        AddSingleton<BattleMiners>().
-        AddSingleton<Alcor.IAlcorClient, Alcor.AlcorClient>();
+        AddSingleton<IResourcePrices, ResourcePrices>().
+        AddSingleton<Alcor.IAlcorClient, Alcor.AlcorClient>().
+        AddSingleton<IAlbums, Albums>().
+        AddSingleton<ICollections, Collections>().
+        AddSingleton<ISchemas, Schemas>().
+        AddSingleton<ITemplates, Templates>().
+        AddScoped<IWaxId, WaxId>().
+        AddScoped<IMiningInfo, MiningInfo>();
 });
+builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
 
 var app = builder.Build();
 

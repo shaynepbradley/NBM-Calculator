@@ -1,0 +1,88 @@
+﻿@using UpgradeCalculator.Classes
+@using AtomicAssets.Models
+@Rarity
+<br />
+<table id="@Rarity.ToLowerInvariant()">
+    <thead>
+        <tr>
+            <td></td>
+            <td>Merge</td>
+            <td>With</td>
+            <td>Wax Cost</td>
+            <td>Fusium</td>
+            <td>Actium</td>
+            <td>Minimium</td>
+            <td>Constructium</td>
+            <td></td>
+        </tr>
+    </thead>
+    <tbody class="fuse">
+        @{
+            var j = 0;
+            var lowerRarity = Rarity.ToLowerInvariant();
+            for (int i = 0; i < 20; i += 2)
+            {
+                var id1 = $"{lowerRarity}{i}";
+                var id2 = $"{lowerRarity}{i + 1}";
+                <tr class="targets">
+                    <td><button class="FuseBtn" style="border-radius: 7px;" disabled>Fuse</button></td>
+                    <td>
+                        <select name="@id1" id=id1 class="{lowerRarity}picker asset1" data-lastvalue="-1">
+                            <option value="-1">&nbsp;</option>
+                            @foreach (var c in Assets)
+                            {
+                                float v = c.Price + c.PriceToLevel5(ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <select name="@id2" id=id2 class=$"{lowerRarity}picker asset2" data-lastvalue="-1">
+                            <option value="-1">&nbsp;</option>
+                            @foreach (var c in Assets)
+                            {
+                                float v = c.Price + c.PriceToLevel5(ResourceValues.Total);
+                                var id = $"C{j++}";
+                                <option id="@id" value="@c.AssetId" title="Purchase cost: @c.Price, resource cost: @c.PriceToNextRarity5(ResourceValues.Total)">@c.ToString()</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="cost"></td>
+                    <td class="fusium"></td>
+                    <td class="actium"></td>
+                    <td class="minimium"></td>
+                    <td class="constructium"></td>
+                    <td class="total"></td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td></td>
+            <td></td>
+            <td style="text-align: right">Total:</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+
+<br />
+
+@code {
+
+    [Parameter]
+    public string Rarity { get; set; } = null!;
+
+    [Parameter]
+    public List<Construction> Assets { get; set; } = null!;
+
+    [Parameter]
+    public Resources ResourceValues { get; set; } = null!;
+
+}
