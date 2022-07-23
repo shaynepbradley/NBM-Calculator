@@ -1,0 +1,109 @@
+﻿@page
+@using PinupWarlords.Models
+@model IndexModel
+@{
+    ViewData["Title"] = "Pinup Warriors";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+
+    <h3>Last 5 Find Oponent</h3>
+    <ul>
+        @{
+            try
+            {
+                foreach (Models.Action<FindOpponent> opponent in Model?.FindOpponent!)
+                {
+                    var data = opponent.act;
+                    <li>@opponent.Timestamp: @opponent.act.data.user</li>
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+                <p>@msg</p>
+            }
+        }
+    </ul>
+    <hr />
+    <h3>Last 5 PrepBattle</h3>
+    <ul>
+        @{
+            try
+            {
+                foreach (Models.Action<PrepBattle> prep in Model!.PrepBattle!)
+                {
+                    var prepAct = prep.act;
+                    <li>
+                        @prep.Timestamp<br />@prepAct.data.user<br />
+                        Soldiers<br />
+                        @{
+                            foreach (var soldier in prepAct.data.soldiers)
+                            {
+                                @soldier
+
+                                <br />
+                            }
+                        }
+                        Staked: @prepAct.data.staked<br />
+                        Weapons: <br />
+                        @{
+                            foreach (var weapon in prepAct.data.weapons)
+                            {
+                                @weapon
+
+                                <br />
+                            }
+                        }
+                    </li>
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+                <p>@msg</p>
+            }
+        }
+    </ul>
+    <hr />
+    <h3>Last 5 Reults</h3>
+    <ul>
+        @{
+            try
+            {
+                foreach (Models.Action<BattleResults> result in Model!.BattleResults!)
+                {
+                    var resultAct = result.act;
+                    var winner = resultAct.data.winner;
+                    var looser = resultAct.data.winner.Equals(resultAct.data.user1) ? resultAct.data.user2 : resultAct.data.user1;
+                    <li>
+                        @result.Timestamp - Winner: @winner Loser: @looser<br />
+                        <!-- Soldiers<br/>
+                        @{
+                            //foreach (var soldier in prepAct.data.soldiers)
+                            //{
+                            //    @soldier<br/>
+                            //}
+                        }
+                        Staked: // @resultAct.data<br/>
+                        Weapons: <br/>
+                        @{
+                            //foreach (var weapon in resultAct.data.hitpoints_2)
+                            //{
+                            //    @weapon<br/>
+                            //}
+                        }
+                        -->
+            </li>
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+                <p>@msg</p>
+            }
+
+        }
+    </ul>
+</div>
